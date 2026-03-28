@@ -793,6 +793,10 @@
     function getHist(hist, a, b) { return hist[pairKey(a, b)] || 0; }
     function addHist(hist, a, b) { const k = pairKey(a, b); hist[k] = (hist[k] || 0) + 1; }
 
+    // Build scheduling units: fixed pairs as one unit, others as individuals
+    const pairedPlayerSet = new Set(fixedPairs.flat());
+    const soloPlayers = nums.filter(n => !pairedPlayerSet.has(n));
+
     for (let r = 0; r < rounds; r++) {
       const restSlots = nums.length - playersPerRound;
       let playing = [];
@@ -801,38 +805,51 @@
       if (restSlots <= 0) {
         playing = nums.slice();
       } else {
-        const mustPlay = prevResting.slice();
-        const others = shuffle(nums.filter(n => !mustPlay.includes(n)));
-        others.sort((a, b) => restCount[b] - restCount[a]);
-        const slotsLeft = playersPerRound - mustPlay.length;
-        const extraPlay = others.slice(0, slotsLeft);
-        resting = others.slice(slotsLeft);
-
-        // If a fixed pair is split (one playing, one resting), swap to keep them together
+        // Treat fixed pairs as atomic units for rest scheduling
+        // Each unit: { members: [...], restTotal, restedLast }
+        const units = [];
         for (const pair of fixedPairs) {
-          const aPlays = mustPlay.includes(pair[0]) || extraPlay.includes(pair[0]);
-          const bPlays = mustPlay.includes(pair[1]) || extraPlay.includes(pair[1]);
-          if (aPlays && !bPlays) {
-            // b is resting, swap b with a non-mustPlay, non-paired player in extraPlay
-            const swapIdx = extraPlay.findIndex(n => !mustPlay.includes(n) && !fixedPairs.some(p => p[0] === n || p[1] === n));
-            if (swapIdx !== -1) {
-              const removed = extraPlay[swapIdx];
-              extraPlay[swapIdx] = pair[1];
-              resting = resting.filter(n => n !== pair[1]);
-              resting.push(removed);
-            }
-          } else if (!aPlays && bPlays) {
-            const swapIdx = extraPlay.findIndex(n => !mustPlay.includes(n) && !fixedPairs.some(p => p[0] === n || p[1] === n));
-            if (swapIdx !== -1) {
-              const removed = extraPlay[swapIdx];
-              extraPlay[swapIdx] = pair[0];
-              resting = resting.filter(n => n !== pair[0]);
-              resting.push(removed);
-            }
+          units.push({
+            members: [pair[0], pair[1]],
+            restTotal: restCount[pair[0]] + restCount[pair[1]],
+            restedLast: prevResting.includes(pair[0]) || prevResting.includes(pair[1])
+          });
+        }
+        for (const p of soloPlayers) {
+          units.push({
+            members: [p],
+            restTotal: restCount[p],
+            restedLast: prevResting.includes(p)
+          });
+        }
+
+        // Units that rested last round must play
+        const mustPlayUnits = units.filter(u => u.restedLast);
+        const otherUnits = shuffle(units.filter(u => !u.restedLast));
+        // Sort others: higher rest total → play first (lower priority to rest)
+        otherUnits.sort((a, b) => b.restTotal - a.restTotal);
+
+        // Fill playing slots
+        let playSlots = playersPerRound;
+        const playUnits = [];
+        const restUnits = [];
+
+        for (const u of mustPlayUnits) {
+          playUnits.push(u);
+          playSlots -= u.members.length;
+        }
+
+        for (const u of otherUnits) {
+          if (playSlots >= u.members.length) {
+            playUnits.push(u);
+            playSlots -= u.members.length;
+          } else {
+            restUnits.push(u);
           }
         }
 
-        playing = mustPlay.concat(extraPlay);
+        playing = playUnits.flatMap(u => u.members);
+        resting = restUnits.flatMap(u => u.members);
       }
 
       // Build teams: fixed pairs stay, singles paired by least teammate history
