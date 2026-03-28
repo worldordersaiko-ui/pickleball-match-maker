@@ -74,11 +74,6 @@
     position: relative;
   }
 
-  @keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-4px); }
-  }
-
   .container {
     max-width: 640px;
     margin: 0 auto;
@@ -101,7 +96,6 @@
   }
 
   .card:nth-child(2) { animation-delay: 0.08s; }
-  .card:nth-child(3) { animation-delay: 0.16s; }
 
   .card-title {
     font-size: 0.8rem;
@@ -184,52 +178,6 @@
     font-size: 1.3rem;
     font-weight: 700;
     color: var(--text);
-  }
-
-  /* Name Input */
-  .name-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .name-input-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    animation: fadeUp 0.25s ease-out both;
-  }
-
-  .name-number {
-    width: 28px; height: 28px;
-    background: var(--primary-light);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--primary-dark);
-    flex-shrink: 0;
-  }
-
-  .name-input-row input {
-    flex: 1;
-    padding: 10px 14px;
-    border: 2px solid var(--border);
-    border-radius: 10px;
-    font-size: 0.95rem;
-    font-family: inherit;
-    transition: border-color 0.2s;
-    outline: none;
-  }
-
-  .name-input-row input:focus {
-    border-color: var(--primary);
-  }
-
-  .name-input-row input::placeholder {
-    color: #cbd5e1;
   }
 
   /* Generate Button */
@@ -427,25 +375,6 @@
     font-weight: 700;
   }
 
-  .results-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-  }
-
-  .round-count-setting {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-
-  .round-count-setting label {
-    font-weight: 600;
-    font-size: 0.9rem;
-  }
-
   /* Responsive */
   @media (max-width: 480px) {
     header h1 { font-size: 1.4rem; }
@@ -470,7 +399,18 @@
     100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
   }
 
-  /* Share Button */
+  /* Share buttons (shown after generate) */
+  .share-area {
+    display: none;
+    gap: 8px;
+    margin-top: 16px;
+    flex-direction: column;
+  }
+
+  .share-area.show {
+    display: flex;
+  }
+
   .share-btn {
     width: 100%;
     padding: 14px;
@@ -483,7 +423,6 @@
     font-family: inherit;
     cursor: pointer;
     transition: all 0.2s;
-    margin-top: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -499,9 +438,31 @@
     transform: scale(0.98);
   }
 
-  .share-btn .share-icon {
-    font-size: 1.1rem;
-    line-height: 1;
+  .qr-btn {
+    width: 100%;
+    padding: 14px;
+    background: white;
+    color: #7c3aed;
+    border: 2px solid #7c3aed;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .qr-btn:hover {
+    background: #f5f3ff;
+    transform: translateY(-1px);
+  }
+
+  .qr-btn:active {
+    transform: scale(0.98);
   }
 
   /* Toast */
@@ -527,30 +488,6 @@
   .toast.show {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
-  }
-
-  /* Shared banner */
-  .shared-banner {
-    background: linear-gradient(135deg, #eff6ff, #dbeafe);
-    border: 1px solid #93c5fd;
-    border-radius: var(--radius);
-    padding: 16px 20px;
-    margin-bottom: 16px;
-    text-align: center;
-    animation: fadeUp 0.4s ease-out both;
-  }
-
-  .shared-banner p {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #1e40af;
-  }
-
-  .shared-banner small {
-    font-size: 0.8rem;
-    color: #3b82f6;
-    display: block;
-    margin-top: 4px;
   }
 
   /* QR Modal */
@@ -642,35 +579,6 @@
     background: var(--primary-dark);
   }
 
-  /* QR Share Button */
-  .qr-btn {
-    width: 100%;
-    padding: 14px;
-    background: white;
-    color: #7c3aed;
-    border: 2px solid #7c3aed;
-    border-radius: var(--radius);
-    font-size: 1rem;
-    font-weight: 700;
-    font-family: inherit;
-    cursor: pointer;
-    transition: all 0.2s;
-    margin-top: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-
-  .qr-btn:hover {
-    background: #f5f3ff;
-    transform: translateY(-1px);
-  }
-
-  .qr-btn:active {
-    transform: scale(0.98);
-  }
-
   .warning-msg {
     background: #fef2f2;
     border: 1px solid #fecaca;
@@ -701,7 +609,7 @@
 <div class="container">
 
   <!-- Settings Card -->
-  <div class="card">
+  <div class="card" id="settingsCard">
     <div class="card-title">
       <div class="icon">&#9881;</div>
       基本設定
@@ -731,23 +639,6 @@
       </div>
     </div>
 
-  </div>
-
-  <!-- Names Card -->
-  <div class="card">
-    <div class="card-title">
-      <div class="icon">&#128100;</div>
-      プレイヤー名
-    </div>
-    <div class="name-list" id="nameList"></div>
-  </div>
-
-  <!-- Round Count -->
-  <div class="card">
-    <div class="card-title">
-      <div class="icon">&#128200;</div>
-      ラウンド設定
-    </div>
     <div class="setting-row">
       <div class="setting-label">
         ラウンド数
@@ -761,20 +652,23 @@
     </div>
   </div>
 
-  <!-- Buttons -->
+  <!-- Generate Button -->
   <button class="generate-btn" onclick="generate()">
     組み合わせを生成する
-  </button>
-  <button class="share-btn" onclick="shareLink()">
-    <span class="share-icon">&#128279;</span>
-    共有リンクをコピー
-  </button>
-  <button class="qr-btn" onclick="showQR()">
-    QRコードで共有
   </button>
 
   <!-- Results -->
   <div id="results"></div>
+
+  <!-- Share buttons (shown after generate) -->
+  <div class="share-area" id="shareArea">
+    <button class="share-btn" onclick="shareResults()">
+      &#128279; 共有リンクをコピー
+    </button>
+    <button class="qr-btn" onclick="showQR()">
+      QRコードで共有
+    </button>
+  </div>
 </div>
 
 <!-- Toast notification -->
@@ -797,7 +691,7 @@
   let courts = 2;
   let players = 8;
   let rounds = 3;
-
+  let lastResults = null; // stores generated results for sharing
 
   function adjustCourts(d) {
     courts = Math.max(1, Math.min(10, courts + d));
@@ -808,7 +702,6 @@
   function adjustPlayers(d) {
     players = Math.max(4, Math.min(40, players + d));
     document.getElementById('playerCount').textContent = players;
-    renderNames();
   }
 
   function adjustRounds(d) {
@@ -822,47 +715,16 @@
       players = minPlayers;
       document.getElementById('playerCount').textContent = players;
     }
-    renderNames();
   }
 
   function getCourtName(i) {
     return (i + 1) + '番コート';
   }
 
-  function renderNames() {
-    const list = document.getElementById('nameList');
-    const existing = {};
-    list.querySelectorAll('input').forEach((inp, i) => {
-      existing[i] = inp.value;
-    });
-
-    list.innerHTML = '';
-    for (let i = 0; i < players; i++) {
-      const row = document.createElement('div');
-      row.className = 'name-input-row';
-      row.style.animationDelay = (i * 0.03) + 's';
-
-      const num = document.createElement('div');
-      num.className = 'name-number';
-      num.textContent = i + 1;
-
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.placeholder = 'プレイヤー ' + (i + 1);
-      input.value = existing[i] || '';
-      input.dataset.index = i;
-
-      row.appendChild(num);
-      row.appendChild(input);
-      list.appendChild(row);
-    }
-  }
-
-  function getNames() {
-    const inputs = document.querySelectorAll('#nameList input');
-    return Array.from(inputs).map((inp, i) =>
-      inp.value.trim() || ('プレイヤー' + (i + 1))
-    );
+  function getNumbers() {
+    const nums = [];
+    for (let i = 1; i <= players; i++) nums.push(i);
+    return nums;
   }
 
   function shuffle(arr) {
@@ -875,101 +737,112 @@
   }
 
   function generate() {
-    const names = getNames();
+    const nums = getNumbers();
     const resultsDiv = document.getElementById('results');
     resultsDiv.innerHTML = '';
 
-    if (names.length < courts * 4) {
+    if (nums.length < courts * 4) {
       resultsDiv.innerHTML = '<div class="warning-msg">人数がコート数に対して足りません（最低 ' + (courts * 4) + '人必要）</div>';
+      document.getElementById('shareArea').classList.remove('show');
       return;
     }
+
+    // Store results for sharing
+    lastResults = { c: courts, p: players, r: rounds, rounds: [] };
 
     launchConfetti();
 
     for (let r = 0; r < rounds; r++) {
-      const shuffled = shuffle(names);
+      const shuffled = shuffle(nums);
+      lastResults.rounds.push(shuffled);
 
-      // Round header
-      const header = document.createElement('div');
-      header.className = 'round-header';
-      header.innerHTML = '<span class="round-pill">Round ' + (r + 1) + '</span>';
-      header.style.animationDelay = (r * 0.15) + 's';
-      resultsDiv.appendChild(header);
-
-      let idx = 0;
-      for (let c = 0; c < courts; c++) {
-        const card = document.createElement('div');
-        card.className = 'court-card';
-        card.style.animationDelay = (r * 0.15 + c * 0.08) + 's';
-
-        const courtName = document.createElement('div');
-        courtName.className = 'court-name';
-        courtName.textContent = getCourtName(c);
-
-        const matchRow = document.createElement('div');
-        matchRow.className = 'match-row';
-
-        const teamA = document.createElement('div');
-        teamA.className = 'team team-a';
-        for (let p = 0; p < 2; p++) {
-          const tag = document.createElement('span');
-          tag.className = 'player-tag';
-          tag.textContent = shuffled[idx++];
-          tag.style.animationDelay = (r * 0.15 + c * 0.08 + p * 0.05) + 's';
-          teamA.appendChild(tag);
-        }
-
-        const vs = document.createElement('span');
-        vs.className = 'vs';
-        vs.textContent = 'VS';
-
-        const teamB = document.createElement('div');
-        teamB.className = 'team team-b';
-        for (let p = 0; p < 2; p++) {
-          const tag = document.createElement('span');
-          tag.className = 'player-tag';
-          tag.textContent = shuffled[idx++];
-          tag.style.animationDelay = (r * 0.15 + c * 0.08 + (p + 2) * 0.05) + 's';
-          teamB.appendChild(tag);
-        }
-
-        matchRow.appendChild(teamA);
-        matchRow.appendChild(vs);
-        matchRow.appendChild(teamB);
-
-        card.appendChild(courtName);
-        card.appendChild(matchRow);
-        resultsDiv.appendChild(card);
-      }
-
-      // Rest players
-      if (idx < shuffled.length) {
-        const restCard = document.createElement('div');
-        restCard.className = 'rest-card';
-        restCard.style.animationDelay = (r * 0.15 + courts * 0.08) + 's';
-
-        const restLabel = document.createElement('div');
-        restLabel.className = 'rest-label';
-        restLabel.textContent = 'お休み';
-
-        const restPlayers = document.createElement('div');
-        restPlayers.className = 'rest-players';
-
-        while (idx < shuffled.length) {
-          const tag = document.createElement('span');
-          tag.className = 'player-tag';
-          tag.textContent = shuffled[idx++];
-          tag.style.animationDelay = (r * 0.15 + courts * 0.08 + 0.05) + 's';
-          restPlayers.appendChild(tag);
-        }
-
-        restCard.appendChild(restLabel);
-        restCard.appendChild(restPlayers);
-        resultsDiv.appendChild(restCard);
-      }
+      renderRound(resultsDiv, r, shuffled);
     }
 
+    // Show share buttons
+    document.getElementById('shareArea').classList.add('show');
+
     resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function renderRound(container, r, shuffled) {
+    const header = document.createElement('div');
+    header.className = 'round-header';
+    header.innerHTML = '<span class="round-pill">Round ' + (r + 1) + '</span>';
+    header.style.animationDelay = (r * 0.15) + 's';
+    container.appendChild(header);
+
+    let idx = 0;
+    for (let c = 0; c < courts; c++) {
+      const card = document.createElement('div');
+      card.className = 'court-card';
+      card.style.animationDelay = (r * 0.15 + c * 0.08) + 's';
+
+      const courtName = document.createElement('div');
+      courtName.className = 'court-name';
+      courtName.textContent = getCourtName(c);
+
+      const matchRow = document.createElement('div');
+      matchRow.className = 'match-row';
+
+      const teamA = document.createElement('div');
+      teamA.className = 'team team-a';
+      for (let p = 0; p < 2; p++) {
+        const tag = document.createElement('span');
+        tag.className = 'player-tag';
+        tag.textContent = shuffled[idx++];
+        tag.style.animationDelay = (r * 0.15 + c * 0.08 + p * 0.05) + 's';
+        teamA.appendChild(tag);
+      }
+
+      const vs = document.createElement('span');
+      vs.className = 'vs';
+      vs.textContent = 'VS';
+
+      const teamB = document.createElement('div');
+      teamB.className = 'team team-b';
+      for (let p = 0; p < 2; p++) {
+        const tag = document.createElement('span');
+        tag.className = 'player-tag';
+        tag.textContent = shuffled[idx++];
+        tag.style.animationDelay = (r * 0.15 + c * 0.08 + (p + 2) * 0.05) + 's';
+        teamB.appendChild(tag);
+      }
+
+      matchRow.appendChild(teamA);
+      matchRow.appendChild(vs);
+      matchRow.appendChild(teamB);
+
+      card.appendChild(courtName);
+      card.appendChild(matchRow);
+      container.appendChild(card);
+    }
+
+    // Rest players
+    if (idx < shuffled.length) {
+      const restCard = document.createElement('div');
+      restCard.className = 'rest-card';
+      restCard.style.animationDelay = (r * 0.15 + courts * 0.08) + 's';
+
+      const restLabel = document.createElement('div');
+      restLabel.className = 'rest-label';
+      restLabel.textContent = 'お休み';
+
+      const restPlayers = document.createElement('div');
+      restPlayers.className = 'rest-players';
+
+      while (idx < shuffled.length) {
+        const tag = document.createElement('span');
+        tag.className = 'player-tag';
+        tag.textContent = shuffled[idx++];
+        tag.style.animationDelay = (r * 0.15 + courts * 0.08 + 0.05) + 's';
+        restPlayers.appendChild(tag);
+      }
+
+      restCard.appendChild(restLabel);
+      restCard.appendChild(restPlayers);
+      container.appendChild(restCard);
+    }
   }
 
   function launchConfetti() {
@@ -989,78 +862,25 @@
     }
   }
 
-  // --- Share / URL ---
-  function shareLink() {
-    const url = buildShareURL();
-    navigator.clipboard.writeText(url).then(() => {
-      showToast('共有リンクをコピーしました');
-    }).catch(() => {
-      const ta = document.createElement('textarea');
-      ta.value = url;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      showToast('共有リンクをコピーしました');
-    });
-  }
-
-  function loadFromURL() {
-    const params = new URLSearchParams(location.search);
-    const d = params.get('d');
-    if (!d) return false;
-
-    try {
-      const json = decodeURIComponent(escape(atob(d)));
-      const data = JSON.parse(json);
-
-      courts = Math.max(1, Math.min(10, data.c || 2));
-      players = Math.max(4, Math.min(40, data.p || 8));
-      rounds = Math.max(1, Math.min(20, data.r || 3));
-      const names = data.n || [];
-
-      document.getElementById('courtCount').textContent = courts;
-      document.getElementById('playerCount').textContent = players;
-      document.getElementById('roundCount').textContent = rounds;
-
-      renderNames();
-
-      // Fill in shared names
-      const inputs = document.querySelectorAll('#nameList input');
-      names.forEach((name, i) => {
-        if (inputs[i]) inputs[i].value = name;
-      });
-
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  // --- QR Code ---
+  // --- Share results ---
   let currentShareURL = '';
 
-  function buildShareURL() {
-    const names = [];
-    document.querySelectorAll('#nameList input').forEach(inp => {
-      names.push(inp.value.trim());
-    });
+  function buildResultsURL() {
+    if (!lastResults) return '';
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(lastResults))));
+    return location.origin + location.pathname + '?r=' + encoded;
+  }
 
-    const data = {
-      c: courts,
-      p: players,
-      r: rounds,
-      n: names.filter(n => n.length > 0)
-    };
-
-    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
-    return location.origin + location.pathname + '?d=' + encoded;
+  function shareResults() {
+    const url = buildResultsURL();
+    if (!url) { showToast('先に組み合わせを生成してください'); return; }
+    copyToClipboard(url, '共有リンクをコピーしました');
   }
 
   function showQR() {
-    currentShareURL = buildShareURL();
+    currentShareURL = buildResultsURL();
+    if (!currentShareURL) { showToast('先に組み合わせを生成してください'); return; }
+
     const overlay = document.getElementById('qrOverlay');
     const canvas = document.getElementById('qrCanvas');
 
@@ -1083,18 +903,22 @@
   }
 
   function copyFromQR() {
-    navigator.clipboard.writeText(currentShareURL).then(() => {
-      showToast('リンクをコピーしました');
+    copyToClipboard(currentShareURL, 'リンクをコピーしました');
+  }
+
+  function copyToClipboard(text, msg) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast(msg);
     }).catch(() => {
       const ta = document.createElement('textarea');
-      ta.value = currentShareURL;
+      ta.value = text;
       ta.style.position = 'fixed';
       ta.style.opacity = '0';
       document.body.appendChild(ta);
       ta.select();
       document.execCommand('copy');
       document.body.removeChild(ta);
-      showToast('リンクをコピーしました');
+      showToast(msg);
     });
   }
 
@@ -1105,17 +929,45 @@
     setTimeout(() => toast.classList.remove('show'), 2500);
   }
 
-  // Init
-  const isShared = loadFromURL();
-  if (!isShared) renderNames();
+  // --- Load shared results from URL ---
+  function loadFromURL() {
+    const params = new URLSearchParams(location.search);
+    const r = params.get('r');
+    if (!r) return false;
 
-  if (isShared) {
-    const banner = document.createElement('div');
-    banner.className = 'shared-banner';
-    banner.innerHTML = '<p>共有データを読み込みました</p><small>名前と設定が反映されています</small>';
-    const container = document.querySelector('.container');
-    container.insertBefore(banner, container.firstChild);
+    try {
+      const json = decodeURIComponent(escape(atob(r)));
+      const data = JSON.parse(json);
+
+      courts = data.c;
+      players = data.p;
+      rounds = data.r;
+
+      document.getElementById('courtCount').textContent = courts;
+      document.getElementById('playerCount').textContent = players;
+      document.getElementById('roundCount').textContent = rounds;
+
+      // Hide settings, show results directly
+      document.getElementById('settingsCard').style.display = 'none';
+      document.querySelector('.generate-btn').style.display = 'none';
+
+      lastResults = data;
+
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '';
+
+      for (let i = 0; i < data.rounds.length; i++) {
+        renderRound(resultsDiv, i, data.rounds[i]);
+      }
+
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
+
+  // Init
+  loadFromURL();
 </script>
 
 </body>
