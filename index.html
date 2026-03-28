@@ -806,19 +806,19 @@
         playing = nums.slice();
       } else {
         // Treat fixed pairs as atomic units for rest scheduling
-        // Each unit: { members: [...], restTotal, restedLast }
+        // Use average rest per member so pairs and solos are compared fairly
         const units = [];
         for (const pair of fixedPairs) {
           units.push({
             members: [pair[0], pair[1]],
-            restTotal: restCount[pair[0]] + restCount[pair[1]],
+            restAvg: (restCount[pair[0]] + restCount[pair[1]]) / 2,
             restedLast: prevResting.includes(pair[0]) || prevResting.includes(pair[1])
           });
         }
         for (const p of soloPlayers) {
           units.push({
             members: [p],
-            restTotal: restCount[p],
+            restAvg: restCount[p],
             restedLast: prevResting.includes(p)
           });
         }
@@ -826,8 +826,8 @@
         // Units that rested last round must play
         const mustPlayUnits = units.filter(u => u.restedLast);
         const otherUnits = shuffle(units.filter(u => !u.restedLast));
-        // Sort others: higher rest total → play first (lower priority to rest)
-        otherUnits.sort((a, b) => b.restTotal - a.restTotal);
+        // Sort others: higher rest avg → play first (they've rested more, should play)
+        otherUnits.sort((a, b) => b.restAvg - a.restAvg);
 
         // Fill playing slots
         let playSlots = playersPerRound;
