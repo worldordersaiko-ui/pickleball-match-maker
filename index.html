@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pickleball Random Match Maker</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&family=Poppins:wght@400;600;700;800&display=swap');
+
+  :root {
+    --primary: #10b981;
+    --primary-dark: #059669;
+    --primary-light: #d1fae5;
+    --accent: #f59e0b;
+    --accent-light: #fef3c7;
+    --bg: #f0fdf4;
+    --card: #ffffff;
+    --text: #1e293b;
+    --text-light: #64748b;
+    --border: #e2e8f0;
+    --shadow: 0 4px 24px rgba(16, 185, 129, 0.10);
+    --radius: 16px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Poppins', 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+
+  header {
+    background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);
+    color: white;
+    text-align: center;
+    padding: 32px 20px 28px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  header::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 200px; height: 200px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+  }
+
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; left: -30px;
+    width: 140px; height: 140px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
+  }
+
+  header h1 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    position: relative;
+  }
+
+  header p {
+    font-size: 0.9rem;
+    opacity: 0.85;
+    margin-top: 4px;
+    position: relative;
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+
+  .container {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 20px 16px;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    animation: fadeUp 0.4s ease-out both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card:nth-child(2) { animation-delay: 0.08s; }
+  .card:nth-child(3) { animation-delay: 0.16s; }
+
+  .card-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--primary-dark);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-title .icon {
+    width: 28px; height: 28px;
+    background: var(--primary-light);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+
+  /* Settings Row */
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .setting-row:last-child { border-bottom: none; }
+
+  .setting-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  .setting-label small {
+    display: block;
+    font-weight: 400;
+    font-size: 0.75rem;
+    color: var(--text-light);
+  }
+
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .stepper button {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    border: 2px solid var(--primary);
+    background: white;
+    color: var(--primary);
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .stepper button:hover {
+    background: var(--primary);
+    color: white;
+  }
+
+  .stepper button:active {
+    transform: scale(0.92);
+  }
+
+  .stepper .value {
+    width: 44px;
+    text-align: center;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  /* Name Input */
+  .name-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .name-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: fadeUp 0.25s ease-out both;
+  }
+
+  .name-number {
+    width: 28px; height: 28px;
+    background: var(--primary-light);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--primary-dark);
+    flex-shrink: 0;
+  }
+
+  .name-input-row input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+
+  .name-input-row input:focus {
+    border-color: var(--primary);
+  }
+
+  .name-input-row input::placeholder {
+    color: #cbd5e1;
+  }
+
+  /* Generate Button */
+  .generate-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #059669, #10b981);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .generate-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(16, 185, 129, 0.4);
+  }
+
+  .generate-btn:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  .generate-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 0; height: 0;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.5s, height 0.5s;
+  }
+
+  .generate-btn:active::after {
+    width: 400px;
+    height: 400px;
+  }
+
+  /* Results */
+  #results {
+    margin-top: 8px;
+  }
+
+  .round-header {
+    text-align: center;
+    margin: 24px 0 16px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--primary-dark);
+    position: relative;
+  }
+
+  .round-header::before,
+  .round-header::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 60px;
+    height: 2px;
+    background: var(--primary-light);
+  }
+
+  .round-header::before { right: calc(50% + 80px); }
+  .round-header::after { left: calc(50% + 80px); }
+
+  .court-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    animation: courtPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .court-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px; height: 100%;
+    border-radius: 4px 0 0 4px;
+  }
+
+  .court-card:nth-child(4n+1)::before { background: #10b981; }
+  .court-card:nth-child(4n+2)::before { background: #f59e0b; }
+  .court-card:nth-child(4n+3)::before { background: #3b82f6; }
+  .court-card:nth-child(4n)::before { background: #ef4444; }
+
+  @keyframes courtPop {
+    from { opacity: 0; transform: scale(0.9) translateY(12px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .court-name {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-light);
+    margin-bottom: 12px;
+  }
+
+  .match-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .team {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .player-tag {
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    animation: tagPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  .team-a .player-tag {
+    background: var(--primary-light);
+    color: var(--primary-dark);
+  }
+
+  .team-b .player-tag {
+    background: var(--accent-light);
+    color: #92400e;
+  }
+
+  @keyframes tagPop {
+    from { opacity: 0; transform: scale(0.7); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .vs {
+    font-weight: 800;
+    font-size: 0.85rem;
+    color: var(--text-light);
+    text-transform: uppercase;
+  }
+
+  .rest-card {
+    background: #fef3c7;
+    border: 2px dashed #f59e0b;
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    text-align: center;
+    animation: courtPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  .rest-card .rest-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #92400e;
+    margin-bottom: 8px;
+  }
+
+  .rest-card .rest-players {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .rest-card .player-tag {
+    background: white;
+    color: #92400e;
+  }
+
+  /* Round number pills */
+  .round-pill {
+    display: inline-block;
+    background: var(--primary);
+    color: white;
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .round-count-setting {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .round-count-setting label {
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    header h1 { font-size: 1.4rem; }
+    .card { padding: 18px; }
+    .match-row { gap: 8px; }
+    .player-tag { padding: 6px 10px; font-size: 0.8rem; }
+  }
+
+  /* Confetti */
+  .confetti-piece {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 1000;
+    animation: confettiFall 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  }
+
+  @keyframes confettiFall {
+    0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+
+  /* Share Button */
+  .share-btn {
+    width: 100%;
+    padding: 14px;
+    background: white;
+    color: var(--primary-dark);
+    border: 2px solid var(--primary);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .share-btn:hover {
+    background: var(--primary-light);
+    transform: translateY(-1px);
+  }
+
+  .share-btn:active {
+    transform: scale(0.98);
+  }
+
+  .share-btn .share-icon {
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--text);
+    color: white;
+    padding: 14px 28px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-family: inherit;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    z-index: 2000;
+    opacity: 0;
+    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Shared banner */
+  .shared-banner {
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    border: 1px solid #93c5fd;
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    text-align: center;
+    animation: fadeUp 0.4s ease-out both;
+  }
+
+  .shared-banner p {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1e40af;
+  }
+
+  .shared-banner small {
+    font-size: 0.8rem;
+    color: #3b82f6;
+    display: block;
+    margin-top: 4px;
+  }
+
+  /* QR Modal */
+  .qr-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .qr-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .qr-modal {
+    background: white;
+    border-radius: 20px;
+    padding: 32px 28px;
+    text-align: center;
+    max-width: 340px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    transform: scale(0.85) translateY(20px);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .qr-overlay.show .qr-modal {
+    transform: scale(1) translateY(0);
+  }
+
+  .qr-modal h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .qr-modal p {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    margin-bottom: 20px;
+  }
+
+  .qr-modal canvas {
+    border-radius: 12px;
+    border: 3px solid var(--primary-light);
+  }
+
+  .qr-modal .qr-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 8px;
+  }
+
+  .qr-modal .qr-actions button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+  }
+
+  .qr-close-btn {
+    background: var(--border);
+    color: var(--text);
+  }
+
+  .qr-close-btn:hover {
+    background: #cbd5e1;
+  }
+
+  .qr-copy-btn {
+    background: var(--primary);
+    color: white;
+  }
+
+  .qr-copy-btn:hover {
+    background: var(--primary-dark);
+  }
+
+  /* QR Share Button */
+  .qr-btn {
+    width: 100%;
+    padding: 14px;
+    background: white;
+    color: #7c3aed;
+    border: 2px solid #7c3aed;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .qr-btn:hover {
+    background: #f5f3ff;
+    transform: translateY(-1px);
+  }
+
+  .qr-btn:active {
+    transform: scale(0.98);
+  }
+
+  .warning-msg {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 12px;
+    animation: shake 0.4s ease-in-out;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Pickleball Match Maker</h1>
+  <p>ランダム組み合わせジェネレーター</p>
+</header>
+
+<div class="container">
+
+  <!-- Settings Card -->
+  <div class="card">
+    <div class="card-title">
+      <div class="icon">&#9881;</div>
+      基本設定
+    </div>
+
+    <div class="setting-row">
+      <div class="setting-label">
+        コート数
+        <small>使用するコートの数</small>
+      </div>
+      <div class="stepper">
+        <button onclick="adjustCourts(-1)">-</button>
+        <div class="value" id="courtCount">2</div>
+        <button onclick="adjustCourts(1)">+</button>
+      </div>
+    </div>
+
+    <div class="setting-row">
+      <div class="setting-label">
+        人数
+        <small>参加プレイヤー数</small>
+      </div>
+      <div class="stepper">
+        <button onclick="adjustPlayers(-1)">-</button>
+        <div class="value" id="playerCount">8</div>
+        <button onclick="adjustPlayers(1)">+</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Names Card -->
+  <div class="card">
+    <div class="card-title">
+      <div class="icon">&#128100;</div>
+      プレイヤー名
+    </div>
+    <div class="name-list" id="nameList"></div>
+  </div>
+
+  <!-- Round Count -->
+  <div class="card">
+    <div class="card-title">
+      <div class="icon">&#128200;</div>
+      ラウンド設定
+    </div>
+    <div class="setting-row">
+      <div class="setting-label">
+        ラウンド数
+        <small>生成するラウンドの数</small>
+      </div>
+      <div class="stepper">
+        <button onclick="adjustRounds(-1)">-</button>
+        <div class="value" id="roundCount">3</div>
+        <button onclick="adjustRounds(1)">+</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <button class="generate-btn" onclick="generate()">
+    組み合わせを生成する
+  </button>
+  <button class="share-btn" onclick="shareLink()">
+    <span class="share-icon">&#128279;</span>
+    共有リンクをコピー
+  </button>
+  <button class="qr-btn" onclick="showQR()">
+    QRコードで共有
+  </button>
+
+  <!-- Results -->
+  <div id="results"></div>
+</div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
+
+<!-- QR Modal -->
+<div class="qr-overlay" id="qrOverlay" onclick="closeQR(event)">
+  <div class="qr-modal">
+    <h3>QRコードで共有</h3>
+    <p>みんなにスキャンしてもらおう</p>
+    <canvas id="qrCanvas"></canvas>
+    <div class="qr-actions">
+      <button class="qr-close-btn" onclick="closeQR()">閉じる</button>
+      <button class="qr-copy-btn" onclick="copyFromQR()">リンクをコピー</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let courts = 2;
+  let players = 8;
+  let rounds = 3;
+
+
+  function adjustCourts(d) {
+    courts = Math.max(1, Math.min(10, courts + d));
+    document.getElementById('courtCount').textContent = courts;
+    syncPlayers();
+  }
+
+  function adjustPlayers(d) {
+    players = Math.max(4, Math.min(40, players + d));
+    document.getElementById('playerCount').textContent = players;
+    renderNames();
+  }
+
+  function adjustRounds(d) {
+    rounds = Math.max(1, Math.min(20, rounds + d));
+    document.getElementById('roundCount').textContent = rounds;
+  }
+
+  function syncPlayers() {
+    const minPlayers = courts * 4;
+    if (players < minPlayers) {
+      players = minPlayers;
+      document.getElementById('playerCount').textContent = players;
+    }
+    renderNames();
+  }
+
+  function getCourtName(i) {
+    return (i + 1) + '番コート';
+  }
+
+  function renderNames() {
+    const list = document.getElementById('nameList');
+    const existing = {};
+    list.querySelectorAll('input').forEach((inp, i) => {
+      existing[i] = inp.value;
+    });
+
+    list.innerHTML = '';
+    for (let i = 0; i < players; i++) {
+      const row = document.createElement('div');
+      row.className = 'name-input-row';
+      row.style.animationDelay = (i * 0.03) + 's';
+
+      const num = document.createElement('div');
+      num.className = 'name-number';
+      num.textContent = i + 1;
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.placeholder = 'プレイヤー ' + (i + 1);
+      input.value = existing[i] || '';
+      input.dataset.index = i;
+
+      row.appendChild(num);
+      row.appendChild(input);
+      list.appendChild(row);
+    }
+  }
+
+  function getNames() {
+    const inputs = document.querySelectorAll('#nameList input');
+    return Array.from(inputs).map((inp, i) =>
+      inp.value.trim() || ('プレイヤー' + (i + 1))
+    );
+  }
+
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function generate() {
+    const names = getNames();
+    const resultsDiv = document.getElementById('results');
+    resultsDiv.innerHTML = '';
+
+    if (names.length < courts * 4) {
+      resultsDiv.innerHTML = '<div class="warning-msg">人数がコート数に対して足りません（最低 ' + (courts * 4) + '人必要）</div>';
+      return;
+    }
+
+    launchConfetti();
+
+    for (let r = 0; r < rounds; r++) {
+      const shuffled = shuffle(names);
+
+      // Round header
+      const header = document.createElement('div');
+      header.className = 'round-header';
+      header.innerHTML = '<span class="round-pill">Round ' + (r + 1) + '</span>';
+      header.style.animationDelay = (r * 0.15) + 's';
+      resultsDiv.appendChild(header);
+
+      let idx = 0;
+      for (let c = 0; c < courts; c++) {
+        const card = document.createElement('div');
+        card.className = 'court-card';
+        card.style.animationDelay = (r * 0.15 + c * 0.08) + 's';
+
+        const courtName = document.createElement('div');
+        courtName.className = 'court-name';
+        courtName.textContent = getCourtName(c);
+
+        const matchRow = document.createElement('div');
+        matchRow.className = 'match-row';
+
+        const teamA = document.createElement('div');
+        teamA.className = 'team team-a';
+        for (let p = 0; p < 2; p++) {
+          const tag = document.createElement('span');
+          tag.className = 'player-tag';
+          tag.textContent = shuffled[idx++];
+          tag.style.animationDelay = (r * 0.15 + c * 0.08 + p * 0.05) + 's';
+          teamA.appendChild(tag);
+        }
+
+        const vs = document.createElement('span');
+        vs.className = 'vs';
+        vs.textContent = 'VS';
+
+        const teamB = document.createElement('div');
+        teamB.className = 'team team-b';
+        for (let p = 0; p < 2; p++) {
+          const tag = document.createElement('span');
+          tag.className = 'player-tag';
+          tag.textContent = shuffled[idx++];
+          tag.style.animationDelay = (r * 0.15 + c * 0.08 + (p + 2) * 0.05) + 's';
+          teamB.appendChild(tag);
+        }
+
+        matchRow.appendChild(teamA);
+        matchRow.appendChild(vs);
+        matchRow.appendChild(teamB);
+
+        card.appendChild(courtName);
+        card.appendChild(matchRow);
+        resultsDiv.appendChild(card);
+      }
+
+      // Rest players
+      if (idx < shuffled.length) {
+        const restCard = document.createElement('div');
+        restCard.className = 'rest-card';
+        restCard.style.animationDelay = (r * 0.15 + courts * 0.08) + 's';
+
+        const restLabel = document.createElement('div');
+        restLabel.className = 'rest-label';
+        restLabel.textContent = 'お休み';
+
+        const restPlayers = document.createElement('div');
+        restPlayers.className = 'rest-players';
+
+        while (idx < shuffled.length) {
+          const tag = document.createElement('span');
+          tag.className = 'player-tag';
+          tag.textContent = shuffled[idx++];
+          tag.style.animationDelay = (r * 0.15 + courts * 0.08 + 0.05) + 's';
+          restPlayers.appendChild(tag);
+        }
+
+        restCard.appendChild(restLabel);
+        restCard.appendChild(restPlayers);
+        resultsDiv.appendChild(restCard);
+      }
+    }
+
+    resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function launchConfetti() {
+    const colors = ['#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6', '#ec4899'];
+    for (let i = 0; i < 40; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.left = Math.random() * 100 + 'vw';
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.animationDelay = Math.random() * 0.5 + 's';
+      piece.style.animationDuration = (1 + Math.random()) + 's';
+      piece.style.width = (6 + Math.random() * 8) + 'px';
+      piece.style.height = (6 + Math.random() * 8) + 'px';
+      piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+      document.body.appendChild(piece);
+      setTimeout(() => piece.remove(), 2000);
+    }
+  }
+
+  // --- Share / URL ---
+  function shareLink() {
+    const url = buildShareURL();
+    navigator.clipboard.writeText(url).then(() => {
+      showToast('共有リンクをコピーしました');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('共有リンクをコピーしました');
+    });
+  }
+
+  function loadFromURL() {
+    const params = new URLSearchParams(location.search);
+    const d = params.get('d');
+    if (!d) return false;
+
+    try {
+      const json = decodeURIComponent(escape(atob(d)));
+      const data = JSON.parse(json);
+
+      courts = Math.max(1, Math.min(10, data.c || 2));
+      players = Math.max(4, Math.min(40, data.p || 8));
+      rounds = Math.max(1, Math.min(20, data.r || 3));
+      const names = data.n || [];
+
+      document.getElementById('courtCount').textContent = courts;
+      document.getElementById('playerCount').textContent = players;
+      document.getElementById('roundCount').textContent = rounds;
+
+      renderNames();
+
+      // Fill in shared names
+      const inputs = document.querySelectorAll('#nameList input');
+      names.forEach((name, i) => {
+        if (inputs[i]) inputs[i].value = name;
+      });
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // --- QR Code ---
+  let currentShareURL = '';
+
+  function buildShareURL() {
+    const names = [];
+    document.querySelectorAll('#nameList input').forEach(inp => {
+      names.push(inp.value.trim());
+    });
+
+    const data = {
+      c: courts,
+      p: players,
+      r: rounds,
+      n: names.filter(n => n.length > 0)
+    };
+
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+    return location.origin + location.pathname + '?d=' + encoded;
+  }
+
+  function showQR() {
+    currentShareURL = buildShareURL();
+    const overlay = document.getElementById('qrOverlay');
+    const canvas = document.getElementById('qrCanvas');
+
+    QRCode.toCanvas(canvas, currentShareURL, {
+      width: 240,
+      margin: 2,
+      color: { dark: '#1e293b', light: '#ffffff' }
+    }, function(err) {
+      if (err) {
+        showToast('QRコード生成に失敗しました');
+        return;
+      }
+      overlay.classList.add('show');
+    });
+  }
+
+  function closeQR(e) {
+    if (e && e.target !== e.currentTarget) return;
+    document.getElementById('qrOverlay').classList.remove('show');
+  }
+
+  function copyFromQR() {
+    navigator.clipboard.writeText(currentShareURL).then(() => {
+      showToast('リンクをコピーしました');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = currentShareURL;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('リンクをコピーしました');
+    });
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  }
+
+  // Init
+  const isShared = loadFromURL();
+  if (!isShared) renderNames();
+
+  if (isShared) {
+    const banner = document.createElement('div');
+    banner.className = 'shared-banner';
+    banner.innerHTML = '<p>共有データを読み込みました</p><small>名前と設定が反映されています</small>';
+    const container = document.querySelector('.container');
+    container.insertBefore(banner, container.firstChild);
+  }
+</script>
+
+</body>
+</html>
