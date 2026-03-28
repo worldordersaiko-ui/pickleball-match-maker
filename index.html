@@ -609,8 +609,10 @@
     const resultsDiv = document.getElementById('results');
     resultsDiv.innerHTML = '';
 
-    if (nums.length < courts * 4) {
-      resultsDiv.innerHTML = '<div class="warning-msg">人数がコート数に対して足りません（最低 ' + (courts * 4) + '人必要）</div>';
+    const playersPerRound = courts * 4;
+
+    if (nums.length < playersPerRound) {
+      resultsDiv.innerHTML = '<div class="warning-msg">人数がコート数に対して足りません（最低 ' + playersPerRound + '人必要）</div>';
       document.getElementById('shareArea').classList.remove('show');
       return;
     }
@@ -618,10 +620,31 @@
     lastResults = { c: courts, p: players, r: rounds, rounds: [] };
     launchConfetti();
 
+    // Track how many times each player has rested
+    const restCount = {};
+    nums.forEach(n => restCount[n] = 0);
+
     for (let r = 0; r < rounds; r++) {
-      const shuffled = shuffle(nums);
-      lastResults.rounds.push(shuffled);
-      renderRound(resultsDiv, r, shuffled);
+      // Sort players: those who rested more go first (will be assigned to courts)
+      // Among same rest count, randomize
+      const shuffledAll = shuffle(nums);
+      shuffledAll.sort((a, b) => restCount[b] - restCount[a]);
+
+      // Players assigned to courts
+      const playing = shuffledAll.slice(0, playersPerRound);
+      // Players resting this round
+      const resting = shuffledAll.slice(playersPerRound);
+
+      // Shuffle the playing group so court/team assignments are random
+      const shuffledPlaying = shuffle(playing);
+      // Combine: playing first, then resting
+      const roundOrder = shuffledPlaying.concat(resting);
+
+      // Update rest counts
+      resting.forEach(n => restCount[n]++);
+
+      lastResults.rounds.push(roundOrder);
+      renderRound(resultsDiv, r, roundOrder);
     }
 
     document.getElementById('shareArea').classList.add('show');
