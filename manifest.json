@@ -1,0 +1,18 @@
+{
+  "name": "Pickleball Match Maker",
+  "short_name": "PB Match",
+  "description": "ピックルボールのランダム組み合わせ生成",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f8fafb",
+  "theme_color": "#059669",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
