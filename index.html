@@ -786,14 +786,12 @@
     nums.forEach(n => restCount[n] = 0);
     let prevResting = [];
 
-    // Track opponent history: how many times each pair has faced each other
+    // Track history
     const opponentHist = {};
-    function oppKey(a, b) { return Math.min(a, b) + '-' + Math.max(a, b); }
-    function matchupScore(t1, t2) {
-      let s = 0;
-      for (const a of t1) for (const b of t2) s += (opponentHist[oppKey(a, b)] || 0);
-      return s;
-    }
+    const teammateHist = {};
+    function pairKey(a, b) { return Math.min(a, b) + '-' + Math.max(a, b); }
+    function getHist(hist, a, b) { return hist[pairKey(a, b)] || 0; }
+    function addHist(hist, a, b) { const k = pairKey(a, b); hist[k] = (hist[k] || 0) + 1; }
 
     for (let r = 0; r < rounds; r++) {
       const restSlots = nums.length - playersPerRound;
@@ -837,30 +835,44 @@
         playing = mustPlay.concat(extraPlay);
       }
 
-      // Build teams respecting fixed pairs
+      // Build teams: fixed pairs stay, singles paired by least teammate history
       const playSet = new Set(playing);
       const activePairs = fixedPairs.filter(p => playSet.has(p[0]) && playSet.has(p[1]));
       const pairedSet = new Set(activePairs.flat());
       const singles = shuffle(playing.filter(n => !pairedSet.has(n)));
 
-      // Create team list: fixed pairs + random pairs from singles
       const teams = shuffle(activePairs).slice();
-      for (let i = 0; i < singles.length; i += 2) {
-        teams.push([singles[i], singles[i + 1]]);
+
+      // Greedy teammate pairing for singles
+      const sUsed = new Array(singles.length).fill(false);
+      for (let i = 0; i < singles.length; i++) {
+        if (sUsed[i]) continue;
+        let bestJ = -1, bestScore = Infinity;
+        for (let j = i + 1; j < singles.length; j++) {
+          if (sUsed[j]) continue;
+          const score = getHist(teammateHist, singles[i], singles[j]);
+          if (score < bestScore || (score === bestScore && Math.random() < 0.4)) {
+            bestScore = score;
+            bestJ = j;
+          }
+        }
+        sUsed[i] = true;
+        sUsed[bestJ] = true;
+        teams.push([singles[i], singles[bestJ]]);
       }
 
-      // Greedily pair teams into courts, minimizing repeat opponents
-      const used = new Array(teams.length).fill(false);
+      // Greedy court assignment: minimize repeat opponents
+      const tUsed = new Array(teams.length).fill(false);
       const courtMatchups = [];
 
       for (let c = 0; c < courts; c++) {
         let bestI = -1, bestJ = -1, bestScore = Infinity;
-        // Try all unused team pairs, pick lowest opponent repeat score
         for (let i = 0; i < teams.length; i++) {
-          if (used[i]) continue;
+          if (tUsed[i]) continue;
           for (let j = i + 1; j < teams.length; j++) {
-            if (used[j]) continue;
-            const score = matchupScore(teams[i], teams[j]);
+            if (tUsed[j]) continue;
+            let score = 0;
+            for (const a of teams[i]) for (const b of teams[j]) score += getHist(opponentHist, a, b);
             if (score < bestScore || (score === bestScore && Math.random() < 0.3)) {
               bestScore = score;
               bestI = i;
@@ -868,25 +880,22 @@
             }
           }
         }
-        used[bestI] = true;
-        used[bestJ] = true;
+        tUsed[bestI] = true;
+        tUsed[bestJ] = true;
         courtMatchups.push([teams[bestI], teams[bestJ]]);
       }
 
-      // Build round order and update opponent history
+      // Build round order and record history
       const roundOrder = [];
       for (const [t1, t2] of courtMatchups) {
-        // Randomly swap team A/B
         if (Math.random() < 0.5) {
           roundOrder.push(t1[0], t1[1], t2[0], t2[1]);
         } else {
           roundOrder.push(t2[0], t2[1], t1[0], t1[1]);
         }
-        // Record opponents
-        for (const a of t1) for (const b of t2) {
-          const k = oppKey(a, b);
-          opponentHist[k] = (opponentHist[k] || 0) + 1;
-        }
+        for (const a of t1) for (const b of t2) addHist(opponentHist, a, b);
+        addHist(teammateHist, t1[0], t1[1]);
+        addHist(teammateHist, t2[0], t2[1]);
       }
       roundOrder.push(...resting);
 
