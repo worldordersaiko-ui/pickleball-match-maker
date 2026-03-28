@@ -786,6 +786,15 @@
     nums.forEach(n => restCount[n] = 0);
     let prevResting = [];
 
+    // Track opponent history: how many times each pair has faced each other
+    const opponentHist = {};
+    function oppKey(a, b) { return Math.min(a, b) + '-' + Math.max(a, b); }
+    function matchupScore(t1, t2) {
+      let s = 0;
+      for (const a of t1) for (const b of t2) s += (opponentHist[oppKey(a, b)] || 0);
+      return s;
+    }
+
     for (let r = 0; r < rounds; r++) {
       const restSlots = nums.length - playersPerRound;
       let playing = [];
@@ -828,34 +837,57 @@
         playing = mustPlay.concat(extraPlay);
       }
 
-      // Build court assignments respecting fixed pairs
+      // Build teams respecting fixed pairs
       const playSet = new Set(playing);
       const activePairs = fixedPairs.filter(p => playSet.has(p[0]) && playSet.has(p[1]));
       const pairedSet = new Set(activePairs.flat());
       const singles = shuffle(playing.filter(n => !pairedSet.has(n)));
-      const pairQueue = shuffle(activePairs);
 
-      const roundOrder = [];
+      // Create team list: fixed pairs + random pairs from singles
+      const teams = shuffle(activePairs).slice();
+      for (let i = 0; i < singles.length; i += 2) {
+        teams.push([singles[i], singles[i + 1]]);
+      }
+
+      // Greedily pair teams into courts, minimizing repeat opponents
+      const used = new Array(teams.length).fill(false);
+      const courtMatchups = [];
+
       for (let c = 0; c < courts; c++) {
-        let team1, team2;
-        if (pairQueue.length > 0) {
-          team1 = pairQueue.pop();
-        } else {
-          team1 = [singles.pop(), singles.pop()];
+        let bestI = -1, bestJ = -1, bestScore = Infinity;
+        // Try all unused team pairs, pick lowest opponent repeat score
+        for (let i = 0; i < teams.length; i++) {
+          if (used[i]) continue;
+          for (let j = i + 1; j < teams.length; j++) {
+            if (used[j]) continue;
+            const score = matchupScore(teams[i], teams[j]);
+            if (score < bestScore || (score === bestScore && Math.random() < 0.3)) {
+              bestScore = score;
+              bestI = i;
+              bestJ = j;
+            }
+          }
         }
-        if (pairQueue.length > 0) {
-          team2 = pairQueue.pop();
-        } else {
-          team2 = [singles.pop(), singles.pop()];
-        }
-        // Randomly swap which team is A vs B
+        used[bestI] = true;
+        used[bestJ] = true;
+        courtMatchups.push([teams[bestI], teams[bestJ]]);
+      }
+
+      // Build round order and update opponent history
+      const roundOrder = [];
+      for (const [t1, t2] of courtMatchups) {
+        // Randomly swap team A/B
         if (Math.random() < 0.5) {
-          roundOrder.push(team1[0], team1[1], team2[0], team2[1]);
+          roundOrder.push(t1[0], t1[1], t2[0], t2[1]);
         } else {
-          roundOrder.push(team2[0], team2[1], team1[0], team1[1]);
+          roundOrder.push(t2[0], t2[1], t1[0], t1[1]);
+        }
+        // Record opponents
+        for (const a of t1) for (const b of t2) {
+          const k = oppKey(a, b);
+          opponentHist[k] = (opponentHist[k] || 0) + 1;
         }
       }
-      // Append resting players
       roundOrder.push(...resting);
 
       resting.forEach(n => restCount[n]++);
