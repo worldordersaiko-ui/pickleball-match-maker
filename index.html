@@ -587,115 +587,6 @@
     font-weight: 500;
   }
 
-  /* ===== Court Balance ===== */
-  .balance-card {
-    background: var(--card);
-    border-radius: var(--radius);
-    padding: 24px;
-    margin-bottom: 12px;
-    margin-top: 8px;
-    box-shadow: var(--shadow);
-    animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
-    overflow-x: auto;
-  }
-
-  .balance-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-  }
-
-  .balance-title-label {
-    font-size: 0.7rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: var(--text-light);
-  }
-
-  .balance-legend {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.68rem;
-    font-weight: 600;
-    color: var(--text-mid);
-  }
-
-  .legend-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 3px;
-  }
-
-  .balance-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.82rem;
-    min-width: 200px;
-  }
-
-  .balance-table th {
-    text-align: center;
-    padding: 8px 6px;
-    font-weight: 700;
-    color: var(--text-mid);
-    font-size: 0.72rem;
-    border-bottom: 2px solid var(--border);
-    white-space: nowrap;
-  }
-
-  .balance-table td {
-    text-align: center;
-    padding: 5px 4px;
-    border-bottom: 1px solid var(--border-light);
-    vertical-align: middle;
-  }
-
-  .balance-player-num {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: var(--primary-pale);
-    color: var(--primary);
-    border: 2px solid var(--primary-light);
-    font-weight: 800;
-    font-size: 0.78rem;
-  }
-
-  .count-badge {
-    display: inline-block;
-    min-width: 28px;
-    padding: 4px 6px;
-    border-radius: 8px;
-    font-weight: 700;
-    font-size: 0.8rem;
-  }
-
-  .count-high { background: #dcfce7; color: #166534; }
-  .count-low  { background: #fee2e2; color: #991b1b; }
-  .count-mid  { background: var(--border-light); color: var(--text-mid); }
-  .count-zero { background: transparent; color: var(--text-light); font-weight: 500; }
-
-  .balance-note {
-    font-size: 0.72rem;
-    color: var(--text-light);
-    margin-top: 12px;
-    font-weight: 500;
-    text-align: center;
-  }
-
   /* ===== Responsive ===== */
   @media (max-width: 480px) {
     header { padding: 40px 20px 36px; }
@@ -1072,10 +963,6 @@
       renderRound(resultsDiv, r, roundOrder);
     }
 
-    if (courts >= 2) {
-      renderCourtBalance(resultsDiv, courtHistory, courts, players);
-    }
-
     document.getElementById('shareArea').classList.add('show');
     resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -1159,79 +1046,6 @@
     }
   }
 
-  function renderCourtBalance(container, courtHistory, numCourts, numPlayers) {
-    const card = document.createElement('div');
-    card.className = 'balance-card';
-
-    const header = document.createElement('div');
-    header.className = 'balance-header';
-    header.innerHTML =
-      '<div class="balance-title-label">コートバランス確認</div>' +
-      '<div class="balance-legend">' +
-        '<span class="legend-item"><span class="legend-dot" style="background:#dcfce7;border:1px solid #86efac"></span>多め</span>' +
-        '<span class="legend-item"><span class="legend-dot" style="background:var(--border-light);border:1px solid var(--border)"></span>均等</span>' +
-        '<span class="legend-item"><span class="legend-dot" style="background:#fee2e2;border:1px solid #fca5a5"></span>少なめ</span>' +
-      '</div>';
-    card.appendChild(header);
-
-    const table = document.createElement('table');
-    table.className = 'balance-table';
-
-    // Header row
-    const thead = document.createElement('thead');
-    let hRow = '<tr><th>選手</th>';
-    for (let c = 0; c < numCourts; c++) {
-      hRow += '<th>' + getCourtName(c) + '</th>';
-    }
-    hRow += '<th>合計</th></tr>';
-    thead.innerHTML = hRow;
-    table.appendChild(thead);
-
-    // Body rows
-    const tbody = document.createElement('tbody');
-    let hasAnyPlays = false;
-
-    for (let p = 1; p <= numPlayers; p++) {
-      const counts = courtHistory[p] || new Array(numCourts).fill(0);
-      const total = counts.reduce((s, x) => s + x, 0);
-      if (total === 0) continue;
-      hasAnyPlays = true;
-
-      // Expected plays per court for this player (they may have different totals due to resting)
-      const avgPerCourt = total / numCourts;
-
-      let row = '<tr><td><span class="balance-player-num">' + p + '</span></td>';
-      for (let c = 0; c < numCourts; c++) {
-        const count = counts[c];
-        let cls;
-        if (count === 0) {
-          cls = 'count-zero';
-        } else if (count >= avgPerCourt + 0.75) {
-          cls = 'count-high';
-        } else if (count <= avgPerCourt - 0.75) {
-          cls = 'count-low';
-        } else {
-          cls = 'count-mid';
-        }
-        row += '<td><span class="count-badge ' + cls + '">' + count + '</span></td>';
-      }
-      row += '<td><span style="font-size:0.78rem;font-weight:700;color:var(--text-mid)">' + total + '</span></td></tr>';
-      tbody.innerHTML += row;
-    }
-
-    if (!hasAnyPlays) return;
-
-    table.appendChild(tbody);
-    card.appendChild(table);
-
-    const note = document.createElement('div');
-    note.className = 'balance-note';
-    note.textContent = '緑=平均より多い / グレー=均等 / 赤=平均より少ない';
-    card.appendChild(note);
-
-    container.appendChild(card);
-  }
-
   function launchConfetti() {
     const colors = ['#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6', '#ec4899'];
     for (let i = 0; i < 50; i++) {
@@ -1313,20 +1127,6 @@
         renderRound(resultsDiv, i, data.rounds[i]);
       }
 
-      // Reconstruct courtHistory from stored round data for balance display
-      if (data.c >= 2) {
-        const ch = {};
-        for (let p = 1; p <= data.p; p++) ch[p] = new Array(data.c).fill(0);
-        for (const roundOrder of data.rounds) {
-          for (let c = 0; c < data.c; c++) {
-            for (let i = 0; i < 4; i++) {
-              const player = roundOrder[c * 4 + i];
-              if (player != null) ch[player][c]++;
-            }
-          }
-        }
-        renderCourtBalance(resultsDiv, ch, data.c, data.p);
-      }
     } catch (e) {}
   }
 
