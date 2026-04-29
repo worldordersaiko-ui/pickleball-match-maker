@@ -820,111 +820,79 @@
     lastResults = { c: courts, p: players, r: rounds, pairs: fixedPairs.slice(), rounds: [] };
     launchConfetti();
 
-    const restCount = {};
-    nums.forEach(n => restCount[n] = 0);
-    let prevResting = [];
+    // ── 試合数均等保証：残り休み回数を事前計算 ──────────────────────────────
+    // 考え方: 「各プレイヤーが何回休むか」を最初に決め切ることで、
+    //         全ラウンド終了時の試合数差を数学的に最大1に保証する。
+    //
+    // totalRestSlots = restPerRound × R を全員で均等分配。
+    //   restsLow  = floor(totalRestSlots / N) … 大多数のプレイヤーの休み回数
+    //   restsLow+1                             … numHighRest 人だけ1回多く休む
+    // → 試合数 = R - 休み回数 なので、差は必ず最大1。
+    const restPerRound = Math.max(0, nums.length - playersPerRound);
+    const totalRestSlots = restPerRound * rounds;
+    const restsLow = Math.floor(totalRestSlots / nums.length);
+    const numHighRest = totalRestSlots % nums.length;
 
-    // Court balance tracking: courtHistory[player][courtIndex] = times on that court
+    const shuffledForRest = shuffle(nums.slice());
+    const remainingRests = {};
+    shuffledForRest.forEach((p, i) => {
+      remainingRests[p] = i < numHighRest ? restsLow + 1 : restsLow;
+    });
+
+    // 固定ペアは2人の残り休み回数を揃える（原子単位で動かすため）
+    for (const [a, b] of fixedPairs) {
+      const avg = Math.round((remainingRests[a] + remainingRests[b]) / 2);
+      remainingRests[a] = avg;
+      remainingRests[b] = avg;
+    }
+
+    // コート履歴・対戦履歴の初期化
     const courtHistory = {};
     nums.forEach(n => { courtHistory[n] = new Array(courts).fill(0); });
 
-    // Track history
     const opponentHist = {};
     const teammateHist = {};
     function pairKey(a, b) { return Math.min(a, b) + '-' + Math.max(a, b); }
-    function getHist(hist, a, b) { return hist[pairKey(a, b)] || 0; }
     function addHist(hist, a, b) { const k = pairKey(a, b); hist[k] = (hist[k] || 0) + 1; }
 
-    // Build scheduling units: fixed pairs as one unit, others as individuals
     const pairedPlayerSet = new Set(fixedPairs.flat());
-    const soloPlayers = nums.filter(n => !pairedPlayerSet.has(n));
+    let prevResting = [];
 
     for (let r = 0; r < rounds; r++) {
-      const restSlots = nums.length - playersPerRound;
-      let playing = [];
-      let resting = [];
+      const roundsLeft = rounds - r; // このラウンドを含む残ラウンド数
 
-      if (restSlots <= 0) {
-        playing = nums.slice();
-      } else {
-        // Treat fixed pairs as atomic units for rest scheduling
-        // Use average rest per member so pairs and solos are compared fairly
-        const units = [];
-        for (const pair of fixedPairs) {
-          units.push({
-            members: [pair[0], pair[1]],
-            restAvg: (restCount[pair[0]] + restCount[pair[1]]) / 2,
-            restedLast: prevResting.includes(pair[0]) || prevResting.includes(pair[1])
-          });
-        }
-        for (const p of soloPlayers) {
-          units.push({
-            members: [p],
-            restAvg: restCount[p],
-            restedLast: prevResting.includes(p)
-          });
-        }
+      // ── Step 1: 休みの選出（連続休み禁止 + 試合数均等を絶対保証）──────────
+      // selectResting が「緊急度」に基づいて最適な休みを選ぶ。
+      // 休みが決まったら remainingRests を1減らして次ラウンドの判断に反映。
+      const resting = selectResting(nums, fixedPairs, prevResting, remainingRests, roundsLeft, restPerRound);
+      resting.forEach(p => remainingRests[p]--);
+      const playing = nums.filter(p => !resting.includes(p));
 
-        // Units that rested last round must play
-        const mustPlayUnits = units.filter(u => u.restedLast);
-        const otherUnits = shuffle(units.filter(u => !u.restedLast));
-        // Sort others: higher rest avg → play first (they've rested more, should play)
-        otherUnits.sort((a, b) => b.restAvg - a.restAvg);
-
-        // Fill playing slots
-        let playSlots = playersPerRound;
-        const playUnits = [];
-        const restUnits = [];
-
-        for (const u of mustPlayUnits) {
-          playUnits.push(u);
-          playSlots -= u.members.length;
-        }
-
-        for (const u of otherUnits) {
-          if (playSlots >= u.members.length) {
-            playUnits.push(u);
-            playSlots -= u.members.length;
-          } else {
-            restUnits.push(u);
-          }
-        }
-
-        playing = playUnits.flatMap(u => u.members);
-        resting = restUnits.flatMap(u => u.members);
-      }
-
-      // Build teams: fixed pairs stay, singles paired by least teammate history
+      // ── Step 2: チーム編成（Bitmask DP）────────────────────────────────────
       const playSet = new Set(playing);
       const activePairs = fixedPairs.filter(p => playSet.has(p[0]) && playSet.has(p[1]));
       const pairedSet = new Set(activePairs.flat());
       const singles = shuffle(playing.filter(n => !pairedSet.has(n)));
 
       const teams = shuffle(activePairs).slice();
-
-      // Optimal teammate pairing: minimize repeat teammates + prefer same-court-bias pairs
-      // (same-bias pairs can later be sent to their deficient court together, fixing both at once)
       for (const pair of formTeams(singles, teammateHist, courtHistory, courts)) {
         teams.push(pair);
       }
 
-      // Optimal matchup formation: minimize repeat opponents + prefer high court-clarity matchups
-      // (high clarity = all 4 players share the same court bias → court assignment DP can fix all at once)
+      // ── Step 3: 対戦カード編成（Bitmask DP）─────────────────────────────────
       const courtMatchups = formMatchups(teams, opponentHist, courtHistory, courts);
 
-      // Globally optimal court assignment via bitmask DP (assignment problem).
-      // Finds the assignment of matchups→courts that minimizes total court exposure imbalance
-      // across ALL courts simultaneously — unlike greedy which can sacrifice court N for court 0.
+      // ── Step 4: コート割り当て（Bitmask DP）─────────────────────────────────
       const orderedMatchups = assignMatchupsToCourts(courtMatchups, courtHistory, courts);
 
-      // Update court history with this round's assignments
+      // ── Step 5: コート履歴を更新 ──────────────────────────────────────────
       for (let c = 0; c < courts; c++) {
         for (const p of [...orderedMatchups[c][0], ...orderedMatchups[c][1]]) {
           courtHistory[p][c]++;
         }
       }
 
-      // Build round order and record history
+      // ── Step 6: ラウンド出力 & ペア・対戦履歴を更新 ──────────────────────
       const roundOrder = [];
       for (const [t1, t2] of orderedMatchups) {
         if (Math.random() < 0.5) {
@@ -938,7 +906,6 @@
       }
       roundOrder.push(...resting);
 
-      resting.forEach(n => restCount[n]++);
       prevResting = resting;
 
       lastResults.rounds.push(roundOrder);
@@ -1033,6 +1000,66 @@
       restCard.appendChild(restPlayers);
       container.appendChild(restCard);
     }
+  }
+
+  // ── 休みプレイヤー選出（試合数均等を絶対保証するコア関数）────────────────────
+  // 【設計原理】
+  //   remainingRests[p] = プレイヤーpが残り roundsLeft ラウンドで休まなければならない回数。
+  //   これが維持される限り、全ラウンド終了時の試合数差は必ず最大1に収まる。
+  //
+  // 【分類ロジック】
+  //   試合確定  : 前ラウンドで休んだ（連続休み禁止）OR remainingRests === 0（休み不要）
+  //   休み確定  : remainingRests >= roundsLeft → 今すぐ休まないと残ラウンドで目標達成不能
+  //   どちらでも: 上記以外 → 緊急度（remainingRests の大きい順）でソートして選出
+  //
+  // 【固定ペア】原子単位として扱う。ペアの一方が前ラウンド休んだら両方試合確定。
+  //            緊急度はペア内の最大値を使用（保守的に判断）。
+  function selectResting(allNums, fixedPairs, prevResting, remainingRests, roundsLeft, restPerRound) {
+    if (restPerRound === 0) return [];
+
+    const prevRestSet = new Set(prevResting);
+    const inPair = new Set(fixedPairs.flat());
+
+    // ユニット構築（固定ペアは原子単位）
+    const units = [];
+    for (const pair of fixedPairs) {
+      const restedLast = pair.some(p => prevRestSet.has(p));
+      const urg = Math.max(remainingRests[pair[0]], remainingRests[pair[1]]);
+      units.push({ members: pair.slice(), restedLast, urg });
+    }
+    for (const p of allNums) {
+      if (!inPair.has(p)) {
+        units.push({ members: [p], restedLast: prevRestSet.has(p), urg: remainingRests[p] });
+      }
+    }
+
+    // 分類
+    const forcedRest = [];
+    const flexible = [];
+    for (const u of units) {
+      if (u.restedLast || u.urg === 0) continue; // 試合確定
+      if (u.urg >= roundsLeft) {
+        forcedRest.push(u); // 休み確定（今すぐ休まないと後で詰まる）
+      } else {
+        flexible.push(u);
+      }
+    }
+
+    // 緊急度の高い順にソート（同率はランダム）
+    flexible.sort((a, b) => b.urg - a.urg || Math.random() - 0.5);
+
+    const resting = [...forcedRest];
+    let filled = resting.reduce((s, u) => s + u.members.length, 0);
+
+    for (const u of flexible) {
+      if (filled >= restPerRound) break;
+      if (filled + u.members.length <= restPerRound) {
+        resting.push(u);
+        filled += u.members.length;
+      }
+    }
+
+    return resting.flatMap(u => u.members);
   }
 
   // ── Step 1: Optimal team formation (singles → pairs) ──────────────────────────
